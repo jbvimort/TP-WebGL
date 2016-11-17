@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+        <title>Pool of VIMORT and PASCAL</title>
+        <!-- Babylon.js -->
+        <script src="http://www.babylonjs.com/hand.minified-1.2.js"></script>
+        <script src="http://www.babylonjs.com/cannon.js"></script>
+        <script src="http://www.babylonjs.com/oimo.js"></script>
+        <script src="http://www.babylonjs.com/babylon.js"></script>
+        <style>
+            html, body {
+                overflow: hidden;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            #renderCanvas {
+                width: 100%;
+                height: 100%;
+                touch-action: none;
+            }
+        </style>
+    </head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <script>
+        var canvas = document.getElementById("renderCanvas");
+        var engine = new BABYLON.Engine(canvas, true);
+
+        var createScene = function ()
+	{
+             
+        	// scene
+		var scene = new BABYLON.Scene(engine);
+		scene.enablePhysics();
+        
+		// camera 		 
+		var camera = new BABYLON.ArcRotateCamera("Camera", 3 * Math.PI / 2, Math.PI / 8, 50, BABYLON.Vector3.Zero(), scene);   //creation of a camera that will move but always point to the same point
+		camera.setTarget(new BABYLON.Vector3(0, 0, 20)); //initialisation the point camera will look at                     
+		camera.attachControl(canvas, true);	//allow the movement of the camera thank to the mouse
+		camera.upperBetaLimit = (Math.PI / 2) * 0.99; //unable the possibility to put the camera "under the table"
+		camera.lowerRadiusLimit = 20;
+        
+        	// light
+		var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene); //creation of a light
+		light.intensity = 0.7; //set the intensity of 0.7 instead of 1
+        	 
+		// CREATION OF THE POOL
+			//creation of the baize: it will be created as a ground, the color will be set to be green, and it will have physical interactions with all the balls
+		var ground = BABYLON.Mesh.CreateGround("ground", 20, 40, 2, scene); //creation of the ground
+		ground.position.z =  20;
+		var materialGround = new BABYLON.StandardMaterial("texturePlane", scene);
+		materialGround.diffuseTexture = new BABYLON.Texture("data/grass.jpg", scene);
+		ground.material = materialGround;
+		ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 0, restitution: 0}, scene);  //setting of the physical interaction
+        			
+			//Creation of the boundaries of the pool table: they will be created thanks to 4 boxes, the color of each box will be set to brown, and it will have physical interactions with all the balls
+		var box = [];
+		var positionBox = [    //definition of the positions of each boundarie
+			{ x: 0, z: 0 }, 
+			{ x: 0, z: 40 },			
+			{ x: -10, z: 20 }, 			
+			{ x: 10, z: 20 }];
+		var scalingBox = [       //definition of the scaling of each side to make to make it look the correct size
+			{ x: 20, z: 1 }, 
+			{ x: 20, z: 1 },			
+			{ x: 1, z: 41 }, 			
+			{ x: 1, z: 41 }];
+		var materialBoundaries = new BABYLON.StandardMaterial("textureBoundaries", scene);  //creation of a mateial for all the boundaries
+		materialBoundaries.diffuseColor = new BABYLON.Color3(0.2, 0.1, 0); //setting of the brown color
+		for (var i = 0; i < 4; i++) 
+		{
+			box[i] = BABYLON.Mesh.CreateBox("Box", 1.0, scene);         //Creation of a box
+			box[i].material = materialSphere;                           //setting of the material
+			box[i].position.x = positionBox[i].x;                       //setting of the position
+			box[i].position.z = positionBox[i].z;
+			box[i].scaling.x = scalingBox[i].x;                         //setting of the scaling
+			box[i].scaling.z = scalingBox[i].z;
+			box[i].material = materialBoundaries;
+			box[i].physicsImpostor = new BABYLON.PhysicsImpostor(box[i], BABYLON.PhysicsImpostor.BoxImpostor, { mass: 0, restitution: 1 }, scene); //setting of the physical interaction
+		}
+
+			// Creation of the four holes of the pool: the spheres, except the white sphere, will vanish when there is an intersection between the sphere and a hole
+		var cylinder = [];
+		var materialcylinder = new BABYLON.StandardMaterial("texturecylinder", scene);
+		materialcylinder.diffuseColor = new BABYLON.Color3(0, 0, 0); //Black
+		var positioncylinder = [
+			{x:-9,z:1}, 
+			{x:9,z:1}, 
+			{x:-9,z:39}, 
+			{x:9,z:39}];
+		for (var i = 0; i < 4; i++) 
+		{
+			cylinder[i] = BABYLON.Mesh.CreateCylinder("cylinder", 1, 2, 2, 60, 1, scene);
+			cylinder[i].position.x = positioncylinder[i].x;
+			cylinder[i].position.y = 0.01;
+			cylinder[i].position.z = positioncylinder[i].z;
+			cylinder[i].material = materialcylinder;
+		}
+	    	
+			// Creation of the balls: 1 white spher and severals spheres white different colors which shape a triangle 
+		var sphere = [];    
+		var positionSphere = [ //definition of the positions of each ball
+			{ x: 0, z: 20 }, 
+			{ x: -0.5, z: 21 }, 
+			{ x: 0.5, z: 21 }, 
+			{ x: -1, z: 22 }, 
+			{ x: 0, z: 22 }, 
+			{ x: 1, z: 22 },
+			{ x: 0, z: 10}];
+	        		
+		var colorSphere = [          //definition of the color of each ball
+			{ r: 0, g: 1, b: 0 },
+			{ r: 1, g: 0, b: 0 }, 
+			{ r: 0, g: 0, b: 1 }, 
+			{ r: 1, g: 1, b: 0 }, 
+			{ r: 0, g: 1, b: 1 }, 
+			{ r: 1, g: 0, b: 1 },
+			{ r: 1, g: 1, b: 1 }];
+        			
+		for (var i = 0; i < 7; i++) 
+		{
+			sphere[i] = BABYLON.Mesh.CreateSphere("sphere", 16, 1, scene); //creation of the sphere
+			var materialSphere = new BABYLON.StandardMaterial("texturesphere", scene);
+			materialSphere.diffuseColor = new BABYLON.Color3(colorSphere[i].r,colorSphere[i].g,colorSphere[i].b); //setting of the good color
+			sphere[i].material = materialSphere;
+			sphere[i].position.x = positionSphere[i].x; //setting of the good position for each sphere
+			sphere[i].position.y = 0.5;
+			sphere[i].position.z = positionSphere[i].z;
+			var body = sphere[i].setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 1, restitution: 1 }); //setting of the physical interaction
+			body.linearDamping = 0.2;
+		}
+
+		// Interaction between the holes and the spheres (execpt the white sphere) : when there is a intersection between a sphere and a hole, the sphere vanishes
+		for (var i = 0; i < 6; i++) 
+		{
+			sphere[i].actionManager = new BABYLON.ActionManager(scene);
+
+			for (var j = 0; j < 4; j++) 
+			{
+				sphere[i].actionManager.registerAction(new BABYLON.SetValueAction(
+					{ trigger: BABYLON.ActionManager.OnIntersectionEnterTrigger, parameter: cylinder[j] },
+					sphere[i], "scaling", new BABYLON.Vector3(0, 0, 0)));        
+	
+				sphere[i].actionManager.registerAction(new BABYLON.SetValueAction(
+					{ trigger: BABYLON.ActionManager.OnIntersectionExitTrigger, parameter: cylinder[j] },
+					sphere[i], "scaling", new BABYLON.Vector3(0, 0, 0)));
+			}
+		}
+          
+		//Mouse click event
+		scene.onPointerDown = function (evt, pickResult) 
+		{
+			// if the click hits the white sphere
+			if (pickResult.hit && pickResult.pickedMesh == sphere[6])
+			{
+				// set a velocity to the white sphere depending on where it was hit
+				sphere[6].physicsImpostor.setLinearVelocity(new BABYLON.Vector3(-(pickResult.pickedPoint.x - sphere[6].position.x) * 40, 0, -(pickResult.pickedPoint.z - sphere[6].position.z)*40));
+			}
+
+		
+		};	
+	return scene;       
+        }
+        
+        var scene = createScene();
+
+        engine.runRenderLoop(function () 
+	{
+            scene.render();
+        });
+
+        // Resize
+        window.addEventListener("resize", function () 
+	{
+            engine.resize();
+        });
+    </script>
+</body>
+</html>
