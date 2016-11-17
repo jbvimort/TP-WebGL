@@ -123,3 +123,6 @@ Afin que cette action soit déclenchée, on utilisera un signal déclencheur _tr
 
 ## Conclusion
 L'utilisation du WebGL et de babylon.js nous a permis de mettre en place simplement une simulation relativement réaliste d'un jeu de billard. De plus l'un des avantages majeurs de ce code est sa portabilité, il est de nos jours facilement interpretable par la plupart des navigateurs web indépendamment du système d'exploitation de la machine. 
+
+### Remarque: 
+Rawgit refusant l'utilisation de bibliotèque extérieur, babylon js ne peut être utilisé, aisni notre programme ne s'execute pas correctement. Cependant une fois [l'archive téléchargée](https://github.com/jbvimort/TP-WebGL) le programme s'éxécute parfaitement depuis n'importe quel machine.
